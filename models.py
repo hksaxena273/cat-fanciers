@@ -1,14 +1,13 @@
 from flask_sqlalchemy import SQLAlchemy
 from flask_bcrypt import Bcrypt
-from datetime import datetime
 
 db = SQLAlchemy()
 bcrypt = Bcrypt()
 
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(80), unique=True, nullable=False)
-    password = db.Column(db.String(200), nullable=False)
+    username = db.Column(db.String(150), unique=True, nullable=False)
+    password = db.Column(db.String(150), nullable=False)
     cat_points = db.Column(db.Integer, default=0)
 
     def set_password(self, password):
@@ -17,22 +16,12 @@ class User(db.Model):
     def check_password(self, password):
         return bcrypt.check_password_hash(self.password, password)
 
-
 class Link(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(120), nullable=False)
-    description = db.Column(db.Text, nullable=False)
+    title = db.Column(db.String(150), nullable=False)
+    description = db.Column(db.String(500))
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     user = db.relationship('User', backref=db.backref('links', lazy=True))
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    hidden = db.Column(db.Boolean, default=False)
-
-    def get_rating(self):
-        ratings = Rating.query.filter_by(link_id=self.id).all()
-        if ratings:
-            return sum(r.value for r in ratings) / len(ratings)
-        return 0
-
 
 class Rating(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -41,3 +30,10 @@ class Rating(db.Model):
     link_id = db.Column(db.Integer, db.ForeignKey('link.id'), nullable=False)
     user = db.relationship('User', backref=db.backref('ratings', lazy=True))
     link = db.relationship('Link', backref=db.backref('ratings', lazy=True))
+
+class HiddenLink(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    link_id = db.Column(db.Integer, db.ForeignKey('link.id'), nullable=False)
+    user = db.relationship('User', backref=db.backref('hidden_links', lazy=True))
+    link = db.relationship('Link', backref=db.backref('hidden_by', lazy=True))
